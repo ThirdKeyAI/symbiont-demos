@@ -1,5 +1,7 @@
 # Symbiont Multi-Agent OSINT System (Symbi-OSINT)
 
+<img src="symbi-osint.png" alt="Symbi OSINT" style="max-width: 200px">
+
 ## Overview
 
 This document outlines a comprehensive Open Source Intelligence (OSINT) system built using Symbiont's multi-agent architecture. The system consists of specialized agents for different intelligence domains, each equipped with appropriate tools, APIs, and security policies, now with deeply integrated Large Language Model (LLM) capabilities for advanced analysis and natural language interaction.
