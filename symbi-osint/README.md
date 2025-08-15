@@ -1,6 +1,6 @@
 # Symbiont Multi-Agent OSINT System (Symbi-OSINT)
 
-<img src="symbi-osint.png" alt="Symbi OSINT" style="max-width: 200px">
+<img src="symbi-osint.png" alt="Symbi OSINT" style="max-width: 100px;">
 
 ## Overview
 
