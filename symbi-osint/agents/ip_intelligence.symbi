@@ -1,0 +1,94 @@
+metadata {
+    version = "1.0.0"
+    author = "Network Security Team"
+    description = "IP address intelligence gathering and analysis"
+    tags = ["ip", "network", "geolocation", "reputation"]
+}
+
+agent ip_intelligence(
+    ip_address: IPAddress,
+    investigation_context: InvestigationContext
+) -> IPIntelligenceReport {
+    capabilities = [
+        "ip_analysis",
+        "geolocation",
+        "reputation_check",
+        "whois_lookup",
+        "port_scanning",
+        "threat_intelligence"
+    ]
+    
+    policy ip_investigation_rules {
+        allow: query_external_apis if ip_address.is_public
+        allow: perform_active_scanning if investigation_context.scope == "authorized"
+        deny: scan_private_networks if ip_address.is_private
+        require: legal_authorization for active_reconnaissance
+        audit: all_queries with ip_address_hash
+    }
+    
+    with memory = "ephemeral", privacy = "medium", security = "high" {
+        let report = IPIntelligenceReport::new(ip_address);
+        
+        try {
+            // Basic IP information
+            let whois_data = query_whois(ip_address);
+            report.ownership = extract_ownership_info(whois_data);
+            
+            // Geolocation analysis
+            let geo_data = query_multiple_geo_apis([
+                "MaxMind GeoIP2",
+                "IPGeolocation.io", 
+                "IP2Location",
+                "GeoJS"
+            ], ip_address);
+            report.geolocation = correlate_geo_data(geo_data);
+            
+            // Reputation checks
+            let reputation_data = query_reputation_apis([
+                "VirusTotal",
+                "AbuseIPDB", 
+                "ThreatCrowd",
+                "AlienVault OTX",
+                "IBM X-Force"
+            ], ip_address);
+            report.reputation = analyze_reputation_scores(reputation_data);
+            
+            // Network analysis
+            if investigation_context.include_network_analysis {
+                let network_info = analyze_network_block(ip_address);
+                report.network_context = network_info;
+                
+                // Port scanning (if authorized)
+                if investigation_context.authorized_scanning {
+                    let open_ports = nmap_scan(ip_address, common_ports);
+                    report.exposed_services = analyze_services(open_ports);
+                }
+            }
+            
+            // Threat intelligence correlation
+            let threat_intel = correlate_threat_intelligence(ip_address, [
+                "MISP feeds",
+                "OpenIOC",
+                "Yara rules",
+                "Custom threat feeds"
+            ]);
+            report.threat_indicators = threat_intel;
+            
+            // Historical analysis
+            let historical_data = query_passive_dns(ip_address);
+            report.historical_domains = historical_data;
+            
+            audit_log("ip_analysis_completed", {
+                "ip_address": hash(ip_address),
+                "reputation_score": report.reputation.overall_score,
+                "threat_level": report.threat_indicators.risk_level
+            });
+            
+        } catch (APIError e) {
+            report.errors.push(e);
+            audit_log("ip_analysis_error", e.details);
+        }
+        
+        return report;
+    }
+}

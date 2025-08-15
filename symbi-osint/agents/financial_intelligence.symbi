@@ -1,0 +1,109 @@
+metadata {
+    version = "1.0.0"
+    author = "Financial Intelligence Unit"
+    description = "Financial entity investigation and analysis"
+    tags = ["finance", "companies", "economic", "business"]
+}
+
+agent financial_intelligence(
+    entity: FinancialEntity,
+    investigation_scope: FinancialScope
+) -> FinancialIntelligenceReport {
+    capabilities = [
+        "company_research",
+        "financial_records",
+        "regulatory_filings",
+        "ownership_analysis", 
+        "economic_analysis",
+        "sanctions_screening"
+    ]
+    
+    policy financial_investigation_policy {
+        allow: query_public_filings for registered_entities
+        allow: sanctions_database_access for compliance_screening
+        deny: insider_information_access always
+        require: compliance_approval for financial_data_access
+        audit: all_financial_queries with entity_hash
+    }
+    
+    with memory = "ephemeral", privacy = "maximum", security = "maximum" {
+        let report = FinancialIntelligenceReport::new(entity);
+        
+        try {
+            // Company registration and basic information
+            let company_data = query_company_registries([
+                "SEC EDGAR",
+                "Companies House (UK)",
+                "D&B Hoovers",
+                "OpenCorporates",
+                "Local business registries"
+            ], entity);
+            report.company_profile = analyze_company_data(company_data);
+            
+            // Financial filings and reports
+            let financial_filings = query_financial_databases([
+                "SEC filings",
+                "Annual reports",
+                "Quarterly statements",
+                "Proxy statements",
+                "Form 8-K filings"
+            ], entity);
+            report.financial_history = analyze_financial_filings(financial_filings);
+            
+            // Ownership and subsidiary analysis
+            let ownership_structure = analyze_ownership([
+                "Beneficial ownership",
+                "Subsidiary relationships",
+                "Parent companies",
+                "Joint ventures",
+                "Partnerships"
+            ], entity);
+            report.ownership_analysis = ownership_structure;
+            
+            // Sanctions and watchlist screening
+            let sanctions_results = screen_sanctions_lists([
+                "OFAC SDN List",
+                "EU Sanctions List", 
+                "UN Sanctions List",
+                "PEP databases",
+                "Adverse media"
+            ], entity);
+            report.sanctions_screening = sanctions_results;
+            
+            // Financial performance analysis
+            let performance_metrics = calculate_financial_metrics(
+                report.financial_history
+            );
+            report.performance_analysis = performance_metrics;
+            
+            // Related entity discovery
+            let related_entities = find_related_entities(entity, [
+                "Shared addresses",
+                "Common officers",
+                "Similar business activities",
+                "Financial relationships"
+            ]);
+            report.related_entities = related_entities;
+            
+            // Risk assessment
+            let risk_assessment = calculate_financial_risk(
+                report.sanctions_screening,
+                report.financial_history,
+                report.ownership_analysis
+            );
+            report.risk_assessment = risk_assessment;
+            
+            audit_log("financial_analysis_completed", {
+                "entity_hash": hash(entity),
+                "risk_score": report.risk_assessment.overall_score,
+                "sanctions_hits": report.sanctions_screening.hits.length
+            });
+            
+        } catch (FinancialAPIError e) {
+            report.errors.push(e);
+            audit_log("financial_analysis_error", e.details);
+        }
+        
+        return report;
+    }
+}

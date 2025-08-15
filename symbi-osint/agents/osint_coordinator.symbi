@@ -1,0 +1,75 @@
+metadata {
+    version = "1.1.0"
+    author = "OSINT Team"
+    description = "Main coordinator for OSINT investigations with NLP capabilities"
+    tags = ["osint", "coordination", "investigation", "nlp", "llm"]
+}
+
+agent osint_coordinator(
+    investigation_request: InvestigationRequest
+) -> InvestigationPlan {
+    capabilities = [
+        "task_coordination",
+        "agent_communication",
+        "investigation_planning",
+        "priority_management",
+        "nlp_query_processing",
+        "intent_recognition"
+    ]
+    
+    policy investigation_security {
+        allow: coordinate_agents if request.clearance_level >= "analyst"
+        allow: access_sensitive_apis if request.urgency == "high"
+        deny: store_pii if request.data_retention == "temporary"
+        require: audit_trail for all_investigations
+        audit: all_operations with digital_signature
+    }
+    
+    with memory = "persistent", privacy = "high", security = "maximum" {
+        // Use LLM to parse natural language queries into structured requests
+        let structured_request = if investigation_request.is_natural_language {
+            llm_parse_query({
+                "system_prompt": "Convert natural language OSINT queries into structured investigation requests. Extract targets, investigation types, and priorities.",
+                "user_prompt": investigation_request.natural_language_query,
+                "output_format": "json",
+                "schema": InvestigationRequestSchema
+            })
+        } else {
+            investigation_request.structured_query
+        };
+
+        // Parse investigation requirements
+        let targets = parse_investigation_targets(structured_request);
+        let investigation_id = generate_investigation_id();
+        
+        // Create investigation plan
+        let plan = InvestigationPlan {
+            id: investigation_id,
+            targets: targets,
+            agents_assigned: assign_agents_by_target_type(targets),
+            priority: structured_request.priority,
+            timeline: calculate_timeline(targets.length),
+            constraints: structured_request.constraints
+        };
+        
+        // Initiate parallel investigations
+        for target in targets {
+            match target.type {
+                "ip_address" => invoke_agent("ip_intelligence", target),
+                "domain" => invoke_agent("domain_intelligence", target),
+                "email" => invoke_agent("email_intelligence", target),
+                "person" => invoke_agent("people_intelligence", target),
+                "company" => invoke_agent("financial_intelligence", target),
+                _ => invoke_agent("general_osint", target)
+            }
+        }
+        
+        audit_log("investigation_initiated", {
+            "investigation_id": investigation_id,
+            "target_count": targets.length,
+            "assigned_agents": plan.agents_assigned.length
+        });
+        
+        return plan;
+    }
+}

@@ -1,0 +1,107 @@
+metadata {
+    version = "1.0.0"
+    author = "Network Analysis Team"  
+    description = "Network infrastructure analysis and mapping"
+    tags = ["network", "infrastructure", "topology", "security"]
+}
+
+agent network_analysis(
+    network_target: NetworkTarget,
+    scan_parameters: ScanParameters
+) -> NetworkAnalysisReport {
+    capabilities = [
+        "network_discovery",
+        "port_scanning",
+        "service_enumeration",
+        "topology_mapping",
+        "vulnerability_assessment",
+        "traffic_analysis"
+    ]
+    
+    policy network_scanning_policy {
+        allow: passive_scanning for all_networks
+        allow: active_scanning if scan_parameters.authorized == true
+        deny: aggressive_scanning if network_target.is_critical_infrastructure
+        require: legal_authorization for active_reconnaissance
+        audit: all_network_activities with target_hash
+    }
+    
+    with memory = "ephemeral", privacy = "medium", security = "high" {
+        let report = NetworkAnalysisReport::new(network_target);
+        
+        try {
+            // Passive network discovery
+            let passive_discovery = perform_passive_discovery([
+                "DNS enumeration",
+                "WHOIS analysis", 
+                "Certificate transparency",
+                "Search engine reconnaissance",
+                "Social media mentions"
+            ], network_target);
+            report.passive_intelligence = passive_discovery;
+            
+            // Active network discovery (if authorized)
+            if scan_parameters.authorized {
+                let active_discovery = perform_active_discovery([
+                    "Ping sweeps",
+                    "Port scanning",
+                    "Service enumeration",
+                    "OS fingerprinting",
+                    "Route tracing"
+                ], network_target, scan_parameters);
+                report.active_discovery = active_discovery;
+            }
+            
+            // Network topology mapping
+            let topology = map_network_topology(
+                report.passive_intelligence,
+                report.active_discovery
+            );
+            report.network_topology = topology;
+            
+            // Service analysis
+            let services = analyze_discovered_services(
+                report.active_discovery.services
+            );
+            report.service_analysis = services;
+            
+            // Vulnerability assessment
+            let vulnerabilities = assess_vulnerabilities([
+                "CVE database lookup",
+                "Service version analysis",
+                "Configuration assessment",
+                "Security headers analysis"
+            ], report.service_analysis);
+            report.vulnerability_assessment = vulnerabilities;
+            
+            // Network security analysis
+            let security_analysis = analyze_network_security([
+                "Firewall detection",
+                "IDS/IPS detection", 
+                "Load balancer analysis",
+                "SSL/TLS configuration",
+                "Security headers"
+            ], network_target);
+            report.security_analysis = security_analysis;
+            
+            // Traffic pattern analysis (passive)
+            let traffic_patterns = analyze_traffic_patterns(
+                network_target,
+                scan_parameters.monitoring_duration
+            );
+            report.traffic_analysis = traffic_patterns;
+            
+            audit_log("network_analysis_completed", {
+                "target_hash": hash(network_target),
+                "hosts_discovered": report.active_discovery.hosts.length,
+                "vulnerabilities_found": report.vulnerability_assessment.high_risk.length
+            });
+            
+        } catch (NetworkError e) {
+            report.errors.push(e);
+            audit_log("network_analysis_error", e.details);
+        }
+        
+        return report;
+    }
+}

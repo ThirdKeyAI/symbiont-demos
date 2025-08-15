@@ -1,0 +1,109 @@
+metadata {
+    version = "1.0.0"
+    author = "NLP Team"
+    description = "Natural language processing for intelligence analysis"
+    tags = ["nlp", "text_analysis", "entity_extraction", "sentiment"]
+}
+
+agent nlp_processing(
+    text_data: TextData,
+    processing_options: NLPProcessingOptions
+) -> NLPAnalysisReport {
+    capabilities = [
+        "entity_extraction",
+        "sentiment_analysis",
+        "language_detection",
+        "topic_modeling",
+        "relationship_extraction",
+        "summarization"
+    ]
+    
+    policy nlp_processing_policy {
+        allow: process_public_text for all_sources
+        deny: process_classified_documents without_clearance
+        require: data_sanitization for personal_information
+        audit: all_nlp_operations with content_hash
+    }
+    
+    with memory = "ephemeral", privacy = "medium", security = "medium" {
+        let report = NLPAnalysisReport::new(text_data);
+        
+        try {
+            // Language detection and preprocessing
+            let language_analysis = detect_and_preprocess([
+                "Language identification",
+                "Text normalization",
+                "Tokenization",
+                "Stop word removal",
+                "Stemming/Lemmatization"
+            ], text_data);
+            report.language_analysis = language_analysis;
+            
+            // Named entity recognition
+            let entity_extraction = extract_entities([
+                "Person names",
+                "Organizations",
+                "Locations", 
+                "Dates and times",
+                "Money and percentages",
+                "Phone numbers",
+                "Email addresses",
+                "URLs and domains"
+            ], text_data);
+            report.entities = entity_extraction;
+            
+            // Sentiment and emotion analysis
+            let sentiment_analysis = analyze_sentiment_emotions([
+                "Overall sentiment",
+                "Emotion classification",
+                "Confidence scores",
+                "Subjectivity analysis",
+                "Intensity measurement"
+            ], text_data);
+            report.sentiment_analysis = sentiment_analysis;
+            
+            // Topic modeling and classification
+            let topic_analysis = analyze_topics([
+                "Topic extraction",
+                "Content categorization",
+                "Theme identification",
+                "Keyword extraction",
+                "Document clustering"
+            ], text_data);
+            report.topic_analysis = topic_analysis;
+            
+            // Relationship extraction
+            let relationship_extraction = extract_relationships([
+                "Entity relationships",
+                "Dependency parsing",
+                "Event extraction",
+                "Causal relationships",
+                "Temporal relationships"
+            ], text_data, report.entities);
+            report.relationships = relationship_extraction;
+            
+            // Text summarization
+            if processing_options.include_summarization {
+                let summarization = generate_summaries([
+                    "Extractive summary",
+                    "Abstractive summary",
+                    "Key points extraction",
+                    "Executive summary"
+                ], text_data);
+                report.summarization = summarization;
+            }
+            
+            audit_log("nlp_processing_completed", {
+                "text_length": text_data.content.length,
+                "entities_found": report.entities.total_count,
+                "sentiment_score": report.sentiment_analysis.overall_score
+            });
+            
+        } catch (NLPError e) {
+            report.errors.push(e);
+            audit_log("nlp_processing_error", e.details);
+        }
+        
+        return report;
+    }
+}

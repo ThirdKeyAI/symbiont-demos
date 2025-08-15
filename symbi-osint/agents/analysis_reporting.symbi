@@ -1,0 +1,64 @@
+metadata {
+    version = "1.1.0"
+    author = "Intelligence Analysis Team"
+    description = "Cross-domain intelligence correlation and reporting with LLM synthesis"
+    tags = ["analysis", "correlation", "reporting", "intelligence", "llm"]
+}
+
+agent analysis_reporting(
+    investigation_results: Vec<IntelligenceReport>,
+    reporting_requirements: ReportingRequirements
+) -> ComprehensiveIntelligenceReport {
+    capabilities = [
+        "data_correlation",
+        "pattern_recognition",
+        "report_generation",
+        "visualization",
+        "risk_assessment",
+        "recommendation_engine",
+        "llm_analysis",
+        "threat_assessment"
+    ]
+    
+    policy analysis_reporting_policy {
+        allow: cross_reference_data from authorized_agents
+        allow: generate_reports if reporting_requirements.authorized
+        deny: expose_sensitive_sources in public_reports
+        require: classification_handling for sensitive_intelligence
+        audit: all_analysis_operations with correlation_hash
+    }
+    
+    with memory = "persistent", privacy = "maximum", security = "maximum" {
+        let comprehensive_report = ComprehensiveIntelligenceReport::new();
+        
+        try {
+            // Sanitize data before LLM processing
+            let sanitized_data = sanitize_for_llm(investigation_results);
+
+            // Use LLM for intelligent analysis and synthesis
+            let llm_analysis_report = llm_analyze({
+                "system_prompt": "You are an expert OSINT analyst. Analyze the provided intelligence data and identify patterns, threats, and relationships, and generate a comprehensive summary.",
+                "user_prompt": reporting_requirements.analysis_prompt,
+                "data": sanitized_data,
+                "max_tokens": 4000,
+                "temperature": 0.1 // Low temperature for factual analysis
+            });
+
+            // Validate and integrate LLM output
+            comprehensive_report.llm_analysis = validate_llm_output(llm_analysis_report.analysis);
+            comprehensive_report.executive_summary = llm_analysis_report.summary;
+            
+            audit_log("comprehensive_analysis_completed", {
+                "investigation_sources": investigation_results.length,
+                "entities_correlated": comprehensive_report.entity_correlations.length,
+                "risk_level": comprehensive_report.risk_assessment.overall_level
+            });
+            
+        } catch (AnalysisError e) {
+            comprehensive_report.errors.push(e);
+            audit_log("analysis_error", e.details);
+        }
+        
+        return comprehensive_report;
+    }
+}

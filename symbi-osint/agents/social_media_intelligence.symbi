@@ -1,0 +1,83 @@
+metadata {
+    version = "1.1.0"
+    author = "Social Media Intelligence Team"
+    description = "Social media platform analysis and monitoring with LLM insights"
+    tags = ["social_media", "content_analysis", "networks", "monitoring", "llm"]
+}
+
+agent social_media_intelligence(
+    social_query: SocialMediaQuery,
+    analysis_parameters: SocialAnalysisParameters
+) -> SocialMediaReport {
+    capabilities = [
+        "platform_analysis",
+        "content_monitoring",
+        "sentiment_analysis",
+        "network_mapping",
+        "trend_analysis",
+        "influence_measurement",
+        "llm_content_understanding"
+    ]
+    
+    policy social_media_policy {
+        allow: public_content_analysis for all_platforms
+        allow: api_access if analysis_parameters.api_authorized
+        deny: private_content_access always
+        require: rate_limiting for api_requests
+        require: content_filtering for inappropriate_material
+        audit: all_social_media_queries with query_hash
+    }
+    
+    with memory = "ephemeral", privacy = "high", security = "medium" {
+        let report = SocialMediaReport::new(social_query);
+        
+        try {
+            // Multi-platform content discovery
+            let content_discovery = discover_content([
+                "Twitter/X",
+                "Facebook", 
+                "Instagram",
+                "LinkedIn",
+                "TikTok",
+                "YouTube",
+                "Reddit",
+                "Telegram"
+            ], social_query, analysis_parameters);
+            report.content_discovery = content_discovery;
+            
+            // Use LLM for context understanding on discovered content
+            for post in report.content_discovery.posts {
+                let content_analysis = llm_analyze_social_content({
+                    "system_prompt": "Analyze this social media post for: 1) Intent and sentiment, 2) Potential threats or concerning content, 3) Network relationships implied, 4) Credibility indicators",
+                    "content": post.text,
+                    "metadata": post.metadata,
+                    "context": social_query.context
+                });
+                
+                post.llm_insights = content_analysis;
+            }
+            
+            // Social network mapping
+            let network_mapping = map_social_networks([
+                "Follower relationships",
+                "Interaction patterns",
+                "Shared content",
+                "Group memberships",
+                "Common connections"
+            ], report.content_discovery);
+            report.network_mapping = network_mapping;
+            
+            audit_log("social_media_analysis_completed", {
+                "query_hash": hash(social_query),
+                "platforms_analyzed": report.content_discovery.platforms.length,
+                "content_items_found": report.content_discovery.total_items
+            });
+            
+        } catch (SocialMediaAPIError e) {
+            report.errors.push(e);
+            audit_log("social_media_analysis_error", e.details);
+        }
+        
+        return report;
+    }
+}

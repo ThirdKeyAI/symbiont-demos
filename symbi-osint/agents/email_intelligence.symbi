@@ -1,0 +1,107 @@
+metadata {
+    version = "1.0.0"
+    author = "Email Intelligence Team"
+    description = "Email address investigation and analysis"
+    tags = ["email", "validation", "breach", "reputation"]
+}
+
+agent email_intelligence(
+    email_address: EmailAddress,
+    investigation_depth: EmailInvestigationDepth
+) -> EmailIntelligenceReport {
+    capabilities = [
+        "email_validation",
+        "breach_analysis", 
+        "reputation_check",
+        "domain_analysis",
+        "social_media_correlation",
+        "account_discovery"
+    ]
+    
+    policy email_investigation_policy {
+        allow: validate_email_format for all_emails
+        allow: breach_database_lookup if investigation_depth >= "standard"
+        deny: active_email_probing if email_address.privacy_protected
+        require: gdpr_compliance for eu_email_addresses
+        audit: all_email_queries with email_hash
+    }
+    
+    with memory = "ephemeral", privacy = "maximum", security = "high" {
+        let report = EmailIntelligenceReport::new(email_address);
+        
+        try {
+            // Email validation and analysis
+            let validation_results = validate_email([
+                "Syntax validation",
+                "Domain existence check",
+                "MX record validation", 
+                "Disposable email detection",
+                "Role account detection"
+            ], email_address);
+            report.validation = validation_results;
+            
+            // Breach database analysis
+            let breach_data = query_breach_databases([
+                "HaveIBeenPwned",
+                "DeHashed",
+                "LeakCheck",
+                "Snusbase",
+                "Intelligence X"
+            ], email_address);
+            report.breach_history = analyze_breach_data(breach_data);
+            
+            // Email reputation analysis
+            let reputation_data = check_email_reputation([
+                "Sender reputation services",
+                "Spam databases",
+                "Phishing databases",
+                "Malware distribution lists"
+            ], email_address);
+            report.reputation = reputation_data;
+            
+            // Domain analysis for email provider
+            let domain = extract_domain(email_address);
+            let domain_intel = query_agent("domain_intelligence", domain);
+            report.domain_intelligence = domain_intel;
+            
+            // Social media account correlation
+            let social_accounts = discover_social_accounts([
+                "Facebook",
+                "Twitter", 
+                "LinkedIn",
+                "Instagram",
+                "GitHub",
+                "Reddit"
+            ], email_address);
+            report.social_media_accounts = social_accounts;
+            
+            // Related account discovery
+            let related_accounts = find_related_accounts([
+                "Username variations",
+                "Similar email patterns",
+                "Shared breach data",
+                "Social media connections"
+            ], email_address);
+            report.related_accounts = related_accounts;
+            
+            // Metadata analysis
+            let metadata_analysis = analyze_email_metadata(
+                email_address,
+                investigation_depth
+            );
+            report.metadata_analysis = metadata_analysis;
+            
+            audit_log("email_analysis_completed", {
+                "email_hash": hash(email_address),
+                "breaches_found": report.breach_history.total_breaches,
+                "social_accounts_found": report.social_media_accounts.length
+            });
+            
+        } catch (EmailAPIError e) {
+            report.errors.push(e);
+            audit_log("email_analysis_error", e.details);
+        }
+        
+        return report;
+    }
+}

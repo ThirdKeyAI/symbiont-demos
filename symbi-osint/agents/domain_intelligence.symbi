@@ -1,0 +1,98 @@
+metadata {
+    version = "1.0.0"
+    author = "Domain Analysis Team"
+    description = "Comprehensive domain intelligence gathering"
+    tags = ["domain", "dns", "certificates", "subdomains"]
+}
+
+agent domain_intelligence(
+    domain: DomainName,
+    investigation_depth: InvestigationDepth
+) -> DomainIntelligenceReport {
+    capabilities = [
+        "dns_analysis",
+        "subdomain_discovery", 
+        "certificate_analysis",
+        "domain_reputation",
+        "historical_analysis",
+        "registrar_lookup"
+    ]
+    
+    policy domain_investigation_policy {
+        allow: query_public_dns if domain.is_valid
+        allow: certificate_transparency_lookup for all_domains
+        deny: subdomain_bruteforce if investigation_depth == "passive_only"
+        require: rate_limiting for api_queries
+        audit: all_domain_queries with domain_hash
+    }
+    
+    with memory = "ephemeral", privacy = "medium", security = "high" {
+        let report = DomainIntelligenceReport::new(domain);
+        
+        try {
+            // Basic domain information
+            let whois_data = query_domain_whois(domain);
+            report.registration_info = parse_whois_data(whois_data);
+            
+            // DNS record analysis
+            let dns_records = query_all_dns_records(domain, [
+                "A", "AAAA", "CNAME", "MX", "TXT", "NS", "SOA", "SRV", "PTR"
+            ]);
+            report.dns_records = analyze_dns_records(dns_records);
+            
+            // Subdomain discovery
+            let subdomains = discover_subdomains(domain, [
+                "Certificate Transparency logs",
+                "DNS bruteforcing", 
+                "Search engine dorking",
+                "Subdomain wordlists",
+                "DNS zone transfers"
+            ], investigation_depth);
+            report.subdomains = validate_subdomains(subdomains);
+            
+            // Certificate analysis
+            let certificates = query_certificate_transparency(domain);
+            report.certificates = analyze_ssl_certificates(certificates);
+            
+            // Domain reputation
+            let reputation_data = check_domain_reputation([
+                "VirusTotal",
+                "URLVoid",
+                "Cisco Talos",
+                "Google Safe Browsing",
+                "PhishTank"
+            ], domain);
+            report.reputation = calculate_domain_reputation(reputation_data);
+            
+            // Historical analysis
+            let historical_data = query_historical_data([
+                "Wayback Machine",
+                "DomainTools",
+                "PassiveTotal",
+                "SecurityTrails"
+            ], domain);
+            report.historical_analysis = analyze_domain_history(historical_data);
+            
+            // Related domains
+            let related_domains = find_related_domains(domain, [
+                "Same registrant",
+                "Same IP ranges", 
+                "Similar DNS patterns",
+                "Certificate relationships"
+            ]);
+            report.related_domains = related_domains;
+            
+            audit_log("domain_analysis_completed", {
+                "domain": hash(domain),
+                "subdomain_count": report.subdomains.length,
+                "reputation_score": report.reputation.overall_score
+            });
+            
+        } catch (DNSError e) {
+            report.errors.push(e);
+            audit_log("domain_analysis_error", e.details);
+        }
+        
+        return report;
+    }
+}

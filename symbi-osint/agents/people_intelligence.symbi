@@ -1,0 +1,124 @@
+metadata {
+    version = "1.0.0"
+    author = "People Intelligence Team"
+    description = "Individual person investigation and analysis"
+    tags = ["people", "names", "identity", "biographical"]
+}
+
+agent people_intelligence(
+    person_query: PersonQuery,
+    investigation_scope: PersonInvestigationScope
+) -> PeopleIntelligenceReport {
+    capabilities = [
+        "name_analysis",
+        "biographical_research",
+        "public_records_search",
+        "professional_background",
+        "social_media_analysis",
+        "identity_correlation"
+    ]
+    
+    policy people_investigation_policy {
+        allow: public_records_search for legitimate_investigations
+        allow: social_media_analysis if person_query.consent_obtained
+        deny: private_data_access if investigation_scope == "preliminary"
+        require: legal_authority for detailed_background_checks
+        require: privacy_compliance for all_personal_data
+        audit: all_people_queries with person_hash
+    }
+    
+    with memory = "ephemeral", privacy = "maximum", security = "maximum" {
+        let report = PeopleIntelligenceReport::new(person_query);
+        
+        try {
+            // Name analysis and variations
+            let name_analysis = analyze_name_variations([
+                "Common nicknames",
+                "Alternative spellings",
+                "Cultural name variations",
+                "Maiden names",
+                "Professional names"
+            ], person_query.name);
+            report.name_analysis = name_analysis;
+            
+            // Public records search
+            let public_records = search_public_records([
+                "Voter registrations",
+                "Property records",
+                "Business registrations",
+                "Court records",
+                "Professional licenses"
+            ], person_query, investigation_scope);
+            report.public_records = filter_privacy_compliant(public_records);
+            
+            // Professional background
+            let professional_info = research_professional_background([
+                "LinkedIn profiles",
+                "Company directories",
+                "Professional associations",
+                "Academic publications",
+                "Speaking engagements"
+            ], person_query);
+            report.professional_background = professional_info;
+            
+            // Social media presence analysis
+            if investigation_scope.include_social_media {
+                let social_presence = analyze_social_media_presence([
+                    "Facebook",
+                    "Twitter",
+                    "LinkedIn", 
+                    "Instagram",
+                    "TikTok",
+                    "YouTube"
+                ], person_query);
+                report.social_media_presence = social_presence;
+            }
+            
+            // Educational background
+            let education_data = research_educational_background([
+                "University records",
+                "Alumni directories",
+                "Academic publications",
+                "Degree verification services"
+            ], person_query);
+            report.educational_background = education_data;
+            
+            // Address history and location intelligence
+            let location_history = analyze_location_history(
+                report.public_records,
+                report.social_media_presence
+            );
+            report.location_intelligence = location_history;
+            
+            // Identity correlation and verification
+            let identity_correlation = correlate_identity_data([
+                report.public_records,
+                report.professional_background,
+                report.social_media_presence,
+                report.educational_background
+            ]);
+            report.identity_correlation = identity_correlation;
+            
+            // Associated entities and relationships
+            let relationships = discover_relationships([
+                "Family members",
+                "Business associates", 
+                "Social connections",
+                "Professional networks"
+            ], person_query, report);
+            report.relationships = relationships;
+            
+            audit_log("people_analysis_completed", {
+                "person_hash": hash(person_query),
+                "records_found": report.public_records.length,
+                "confidence_score": report.identity_correlation.confidence
+            });
+            
+        } catch (PrivacyError e) {
+            report.errors.push(e);
+            audit_log("people_analysis_privacy_error", e.details);
+        }
+        
+        return report;
+    }
+}

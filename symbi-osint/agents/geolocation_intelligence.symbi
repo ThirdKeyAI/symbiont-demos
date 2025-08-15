@@ -1,0 +1,104 @@
+metadata {
+    version = "1.0.0"
+    author = "Geographic Intelligence Team"
+    description = "Geolocation intelligence and analysis"
+    tags = ["geolocation", "mapping", "coordinates", "geographic"]
+}
+
+agent geolocation_intelligence(
+    location_query: LocationQuery,
+    analysis_options: GeoAnalysisOptions
+) -> GeolocationReport {
+    capabilities = [
+        "coordinate_analysis",
+        "reverse_geocoding",
+        "satellite_imagery",
+        "map_analysis",
+        "location_correlation",
+        "timezone_analysis"
+    ]
+    
+    policy geolocation_policy {
+        allow: query_mapping_apis for public_locations
+        allow: satellite_imagery_access if analysis_options.imagery_permitted
+        deny: precise_coordinates if location_query.privacy_sensitive
+        require: data_minimization for location_data
+        audit: all_location_queries with query_hash
+    }
+    
+    with memory = "ephemeral", privacy = "high", security = "maximum" {
+        let report = GeolocationReport::new(location_query);
+        
+        try {
+            // Coordinate normalization and validation
+            let coordinates = normalize_coordinates(location_query);
+            report.normalized_location = coordinates;
+            
+            // Multiple geocoding services for accuracy
+            let geocoding_results = query_geocoding_services([
+                "Google Maps Geocoding",
+                "OpenStreetMap Nominatim",
+                "MapBox Geocoding",
+                "Here Geocoding",
+                "Bing Maps"
+            ], location_query);
+            report.geocoding_consensus = calculate_geocoding_consensus(geocoding_results);
+            
+            // Reverse geocoding for coordinates
+            if coordinates.is_valid() {
+                let reverse_geocoding = reverse_geocode_coordinates(coordinates, [
+                    "Administrative boundaries",
+                    "Postal codes",
+                    "Street addresses", 
+                    "Points of interest"
+                ]);
+                report.address_details = reverse_geocoding;
+            }
+            
+            // Timezone analysis
+            let timezone_data = analyze_timezone(coordinates);
+            report.timezone_info = timezone_data;
+            
+            // Satellite and imagery analysis
+            if analysis_options.include_imagery {
+                let imagery_data = query_satellite_imagery([
+                    "Google Earth Engine",
+                    "Sentinel Hub",
+                    "Planet Labs",
+                    "NASA MODIS"
+                ], coordinates, analysis_options.imagery_resolution);
+                report.imagery_analysis = analyze_satellite_data(imagery_data);
+            }
+            
+            // Geospatial correlation
+            let nearby_features = find_nearby_features(coordinates, [
+                "Critical infrastructure",
+                "Government facilities",
+                "Transportation hubs",
+                "Communication towers",
+                "Data centers"
+            ]);
+            report.nearby_infrastructure = nearby_features;
+            
+            // Weather and environmental data
+            let environmental_data = query_environmental_apis([
+                "OpenWeatherMap",
+                "WeatherAPI",
+                "Climate data APIs"
+            ], coordinates);
+            report.environmental_context = environmental_data;
+            
+            audit_log("geolocation_analysis_completed", {
+                "location_hash": hash(location_query),
+                "coordinate_accuracy": report.geocoding_consensus.accuracy,
+                "features_found": report.nearby_infrastructure.length
+            });
+            
+        } catch (GeolocationError e) {
+            report.errors.push(e);
+            audit_log("geolocation_analysis_error", e.details);
+        }
+        
+        return report;
+    }
+}

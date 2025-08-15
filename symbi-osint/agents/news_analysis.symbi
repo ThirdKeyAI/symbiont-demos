@@ -1,0 +1,81 @@
+metadata {
+    version = "1.1.0"
+    author = "Media Intelligence Team"
+    description = "News analysis and media intelligence gathering with LLM summarization"
+    tags = ["news", "media", "sentiment", "monitoring", "llm"]
+}
+
+agent news_analysis(
+    news_query: NewsQuery,
+    monitoring_parameters: NewsMonitoringParameters
+) -> NewsAnalysisReport {
+    capabilities = [
+        "news_monitoring",
+        "sentiment_analysis",
+        "source_analysis",
+        "trend_detection",
+        "fact_checking",
+        "media_bias_detection",
+        "llm_content_analysis",
+        "llm_summarization"
+    ]
+    
+    policy news_analysis_policy {
+        allow: public_news_access for all_sources
+        allow: premium_api_access if monitoring_parameters.premium_authorized
+        deny: paywalled_content_bypass always
+        require: source_attribution for all_content
+        audit: all_news_queries with query_hash
+    }
+    
+    with memory = "ephemeral", privacy = "low", security = "medium" {
+        let report = NewsAnalysisReport::new(news_query);
+        
+        try {
+            // Multi-source news aggregation
+            let news_aggregation = aggregate_news_sources([
+                "Reuters",
+                "Associated Press",
+                "BBC News",
+                "Google News",
+                "AllSides",
+                "NewsAPI",
+                "Event Registry",
+                "GDELT Project"
+            ], news_query, monitoring_parameters);
+            report.news_aggregation = news_aggregation;
+            
+            // Use LLM for advanced content analysis on each article
+            for article in report.news_aggregation.articles {
+                let llm_analysis = llm_analyze_content({
+                    "system_prompt": "Analyze this news article for: 1) Key entities and their relationships, 2) Potential security implications, 3) Credibility assessment, 4) Bias detection",
+                    "content": article.content,
+                    "metadata": article.metadata
+                });
+                
+                article.llm_analysis = llm_analysis;
+            }
+            
+            // Generate LLM-powered comprehensive summary
+            let comprehensive_summary = llm_summarize({
+                "system_prompt": "Create a comprehensive intelligence summary from multiple news sources. Focus on: timeline of events, key players, potential threats, and credibility assessment.",
+                "articles": report.news_aggregation.articles,
+                "max_tokens": 2000
+            });
+            
+            report.llm_summary = comprehensive_summary;
+            
+            audit_log("news_analysis_completed", {
+                "query_hash": hash(news_query),
+                "articles_analyzed": report.news_aggregation.total_articles,
+                "sources_count": report.news_aggregation.sources.length
+            });
+            
+        } catch (NewsAPIError e) {
+            report.errors.push(e);
+            audit_log("news_analysis_error", e.details);
+        }
+        
+        return report;
+    }
+}
