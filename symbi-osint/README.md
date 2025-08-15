@@ -150,7 +150,54 @@ See [`agents/nlp_processing.symbi`](agents/nlp_processing.symbi)
 
 ## Usage Examples
 
-See [`agents/usage_examples.symbi`](agents/usage_examples.symbi)
+### Starting an Investigation with a Natural Language Query
+
+```bash
+# Start a comprehensive investigation using a simple sentence
+curl -X POST http://localhost:8080/api/v1/investigations/start \
+ -H "Content-Type: application/json" \
+ -d '{
+   "query": "Investigate the domain evilcorp.com and the IP 8.8.8.8 for potential threats. High priority.",
+   "requester": "analyst@symbiont.com"
+ }'
+
+# Check investigation status
+curl http://localhost:8080/api/v1/investigations/12345
+
+# Retrieve the final report
+curl http://localhost:8080/api/v1/investigations/12345/report
+```
+
+### Direct Agent Invocation for Email Analysis
+
+```bash
+# Directly trigger the email intelligence agent
+curl -X POST http://localhost:8080/api/v1/agents/email-intelligence/analyze \
+ -H "Content-Type: application/json" \
+ -d '{
+   "email_address": "suspicious@example.com",
+   "investigation_depth": "comprehensive"
+ }'
+```
+
+### Multi-target Structured Investigation
+
+```bash
+# A more complex, structured investigation request
+curl -X POST http://localhost:8080/api/v1/investigations/start-structured \
+ -H "Content-Type: application/json" \
+ -d '{
+   "targets": [
+     {"type": "ip_address", "value": "1.1.1.1"},
+     {"type": "domain", "value": "shady-site.net"},
+     {"type": "email", "value": "contact@shady-site.net"},
+     {"type": "person", "value": "Jane Smith"}
+   ],
+   "investigation_type": "comprehensive",
+   "priority": "high",
+   "correlation_enabled": true
+ }'
+```
 ## Future Improvements  
 
 ### 1. Enhanced Agent Capabilities  
