@@ -148,6 +148,38 @@ See [`agents/analysis_reporting.symbi`](agents/analysis_reporting.symbi)
 
 See [`agents/nlp_processing.symbi`](agents/nlp_processing.symbi)
 
+## Docker Setup
+
+A complete Docker environment has been created for testing and deployment. See [`DOCKER_SETUP.md`](DOCKER_SETUP.md) for detailed instructions.
+
+### Quick Start
+
+```bash
+# Clone and setup
+cd symbi-osint
+cp .env.example .env
+# Edit .env with your API keys
+
+# Start the full stack
+make up
+
+# Test functionality
+make test
+
+# Monitor services
+make status
+```
+
+### Available Services
+
+- **Symbiont Runtime** (port 8080): Main agent execution environment
+- **REPL Server** (port 9257): Interactive testing interface
+- **PostgreSQL** (port 5432): Data persistence with vector extensions
+- **Redis** (port 6379): Caching and sessions
+- **Qdrant** (port 6333): Vector database for RAG
+- **Prometheus** (port 9090): Metrics collection
+- **Grafana** (port 3001): Monitoring dashboards
+
 ## Usage Examples
 
 ### Starting an Investigation with a Natural Language Query
@@ -166,6 +198,23 @@ curl http://localhost:8080/api/v1/investigations/12345
 
 # Retrieve the final report
 curl http://localhost:8080/api/v1/investigations/12345/report
+```
+
+### Using the REPL Interface
+
+```bash
+# Test REPL connectivity
+python3 test-repl.py
+
+# Execute DSL via JSON-RPC
+curl -X POST http://localhost:9257 \
+ -H "Content-Type: application/json" \
+ -d '{
+   "jsonrpc": "2.0",
+   "method": "evaluate",
+   "params": {"input": "let investigation = start_investigation(\"example.com\")"},
+   "id": 1
+ }'
 ```
 
 ### Direct Agent Invocation for Email Analysis

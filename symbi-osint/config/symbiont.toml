@@ -1,0 +1,60 @@
+# Symbiont Configuration for OSINT Operations
+[runtime]
+max_agents = 50
+agent_timeout_seconds = 300
+enable_policy_enforcement = true
+sandbox_mode = true
+
+[database]
+url = "postgresql://symbi:symbi_password@postgres:5432/symbi_osint"
+max_connections = 20
+connection_timeout_seconds = 30
+
+[cache]
+url = "redis://redis:6379"
+password = "symbi_redis_password"
+default_ttl_seconds = 3600
+
+[vector_db]
+url = "http://qdrant:6333"
+collection_name = "osint_intelligence"
+vector_size = 1536
+
+[api]
+host = "0.0.0.0"
+port = 8080
+enable_cors = true
+max_request_size_mb = 10
+
+[mcp]
+host = "0.0.0.0"
+port = 3000
+max_connections = 100
+
+[security]
+require_auth = false
+enable_audit_logging = true
+audit_storage = "database"
+
+[logging]
+level = "info"
+format = "json"
+output = "stdout"
+
+[osint]
+# OSINT-specific configuration
+default_investigation_timeout = 1800  # 30 minutes
+max_concurrent_investigations = 10
+enable_threat_correlation = true
+risk_threshold = 70
+
+# External API rate limits
+api_rate_limits = { default = 100, virustotal = 240, abuseipdb = 1000 }
+
+[llm]
+# LLM configuration for analysis
+provider = "openai"
+model = "gpt-4"
+max_tokens = 4000
+temperature = 0.1
+enable_content_filtering = true
